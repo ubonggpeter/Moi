@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ethereal Website Earning Link</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 2em;
+      background: linear-gradient(to bottom right, #f0f0f0, #dce0dd);
+    }
+    img {
+      border-radius: 50%;
+      width: 120px;
+      height: 120px;
+      margin-bottom: 20px;
+    }
+    h1 {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+    p {
+      font-size: 16px;
+      margin-bottom: 30px;
+    }
+    .whatsapp-button {
+      background: white;
+      border: none;
+      padding: 15px 30px;
+      font-size: 18px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .whatsapp-button:hover {
+      background: #e0ffe0;
+    }
+    .linktree {
+      margin-top: 40px;
+      background: white;
+      padding: 15px;
+      border-radius: 50px;
+      display: inline-block;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <img src="https://yourdomain.com/your-logo.jpg" alt="Logo"> <!-- Replace with your image URL -->
+
+  <h1>ETHEREAL WEBSITE EARNING LINK</h1>
+  <p>CLICK THE WHATSAPP BUTTON BELOW TO GET STARTED<br>OR CHAT <b id="phone-number"></b> ON WHATSAPP IF THE LINK ISN'T WORKING.</p>
+
+  <a id="whatsapp-link" href="#" target="_blank">
+    <button class="whatsapp-button">WHATSAPP</button>
+  </a>
+
+  <!--<div class="linktree">
+    ⭐ Join EtherealWebsite.Com on Linktree
+  </div>-->
+
+  <script>
+    const rawNumbers = [
+      "09164919540",
+      "+2348106900542",
+      "+2349016166239",
+      "+2349162171362",
+      "+2348140660403",
+      "08162897589",
+      "+2349157893093"
+    ];
+
+    const message = encodeURIComponent("I am ready to register.");
+
+    function normalize(number) {
+      return number.replace(/\D/g, '').replace(/^0/, '234');
+    }
+
+    function getRandomIndex() {
+      const visitorId = Math.floor(Math.random() * 1000000); // simulate unique visitor/session ID
+      const timeSlot = Math.floor(Date.now() / (3 * 60 * 1000)); // every 3 minutes
+      const seed = visitorId + timeSlot;
+      const rng = mulberry32(seed);
+      return Math.floor(rng() * rawNumbers.length);
+    }
+
+    // Mulberry32 PRNG (pseudo-random number generator)
+    function mulberry32(a) {
+      return function () {
+        let t = a += 0x6D2B79F5;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      }
+    }
+
+    function updateWhatsAppLink() {
+      const index = getRandomIndex();
+      const raw = rawNumbers[index];
+      const clean = normalize(raw);
+      document.getElementById("whatsapp-link").href = `https://wa.me/${clean}?text=${message}`;
+      document.getElementById("phone-number").textContent = raw;
+    }
+
+    updateWhatsAppLink();
+  </script>
+
+</body>
+</html>
