@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Open in Default Browser</title>
+  <meta name="robots" content="noindex">
+  <style>
+    :root{--bg:#0f172a;--card:#111827;--text:#e5e7eb;--accent:#25D366;}
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(135deg,#0f172a,#0b1023);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial}
+    .wrap{min-height:100svh;display:flex;align-items:center;justify-content:center;padding:24px}
+    .card{width:min(560px,92vw);background:rgba(17,24,39,.6);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.08);border-radius:18px;box-shadow:0 10px 40px rgba(0,0,0,.35);padding:22px}
+    h1{font-size:1.25rem;margin:0 0 12px}
+    p{margin:8px 0 0.6rem;color:#cbd5e1;line-height:1.5}
+    .btn{display:inline-block;width:100%;padding:14px 16px;border-radius:12px;border:0;background:var(--accent);color:#fff;font-weight:700;font-size:1rem;cursor:pointer}
+    .ghost{background:transparent;border:1px dashed rgba(255,255,255,.25);color:#e5e7eb}
+    .row{display:grid;grid-template-columns:1fr;gap:10px;margin-top:12px}
+    .hint{font-size:.86rem;opacity:.8}
+    .hidden{display:none}
+    code{background:rgba(255,255,255,.08);padding:2px 6px;border-radius:6px}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1 id="title">Opening in your default browser…</h1>
+    <p id="desc">If nothing happens, tap the button below to continue in your phone’s default browser.</p>
+    <div class="row">
+      <button id="openBtn" class="btn">Open in Default Browser</button>
+      <button id="copyBtn" class="btn ghost">Copy Link</button>
+    </div>
+    <p class="hint">Tip: Some in‑app browsers (TikTok, Instagram, Facebook) block auto‑opens. This tool safely hands off to your default browser.</p>
+    <p class="hint"><strong>Destination:</strong> <span id="destText"></span></p>
+  </div>
+</div>
+
+<script>
+(function(){
+  // --- Helper: decode ?to= (supports raw, encodeURIComponent, or base64) ---
+  function getParam(name){
+    const url = new URL(window.location.href);
+    return url.searchParams.get(name) || "";
+  }
+  function safeDecode(s){
+    if(!s) return "";
+    try{ return decodeURIComponent(s); }catch(e){}
+    // base64 fallback
+    try{ return atob(s); }catch(e){}
+    return s;
+  }
+
+  const ua = navigator.userAgent || "";
+  const isAndroid = /Android/i.test(ua);
+  const isInApp = /(FBAN|FBAV|FB_IAB|Instagram|Line|Twitter|TikTok|Snapchat|Pinterest|wv|WebView)/i.test(ua);
+  const isIOS = /(iPad|iPhone|iPod)/i.test(ua);
+  const toRaw = getParam("to") || getParam("url") || "";
+  const target = safeDecode(toRaw) || "https://link-tree.site/";
+  const openBtn = document.getElementById("openBtn");
+  const copyBtn = document.getElementById("copyBtn");
+  const destText = document.getElementById("destText");
+
+  // Show destination (without link to avoid accidental open)
+  destText.textContent = target;
+
+  // Build Android intent URL to hand off to default browser chooser
+  // We avoid specifying a package so Android uses the user's default browser.
+  const httpsTarget = target.replace(/^http(s)?:\/\//i, "https://");
+  const intentUrl = `intent://${httpsTarget.replace(/^https:\/\//,'')}` +
+                    `#Intent;scheme=https;action=android.intent.action.VIEW;` +
+                    `S.browser_fallback_url=${encodeURIComponent(httpsTarget)};end`;
+
+  function openExternally(){
+    if(isAndroid){
+      // Try intent first (many in-app browsers respect this)
+      try{ window.location.href = intentUrl; }catch(e){}
+      // Fallback: open with _blank (user may get "open in browser" sheet)
+      setTimeout(function(){ window.open(httpsTarget, "_blank", "noopener"); }, 350);
+    } else if(isIOS){
+      // iOS doesn't support intent://. Best effort: prompt user and try _blank.
+      window.open(httpsTarget, "_blank", "noopener");
+      // Some iOS in-app browsers provide a native "open in Safari" button the user can tap.
+    } else {
+      // Desktop: normal navigation
+      window.location.href = httpsTarget;
+    }
+  }
+
+  // Auto-attempt if inside an in-app WebView
+  if(isInApp){
+    // Attempt immediately, then show UI if blocked
+    setTimeout(openExternally, 100);
+  } else {
+    // Already in a real browser; just go
+    window.location.replace(httpsTarget);
+    return;
+  }
+
+  openBtn.addEventListener("click", openExternally);
+  copyBtn.addEventListener("click", function(){
+    navigator.clipboard.writeText(httpsTarget).then(function(){
+      copyBtn.textContent = "Copied!";
+      setTimeout(()=>copyBtn.textContent="Copy Link", 1500);
+    });
+  });
+})();
+</script>
+</body>
+</html>
