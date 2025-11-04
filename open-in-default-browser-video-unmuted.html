@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Open in Default Browser</title>
+  <meta name="robots" content="noindex">
+  <style>
+    :root{--bg:#0b1023;--overlay:rgba(3,6,20,.86);--text:#e5e7eb;--accent:#22c55e;}
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial}
+    .gate{display:flex;align-items:center;justify-content:center;min-height:100svh;padding:24px}
+    .hidden{display:none!important}
+    .overlay{
+      position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+      background:var(--overlay);backdrop-filter:blur(6px);z-index:999999;
+      padding:20px;
+    }
+    .modal{
+      width:min(720px,96vw);
+      border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.1);
+      box-shadow:0 10px 40px rgba(0,0,0,.5);
+      background:#0f172a;
+    }
+    .video-wrap{position:relative;background:#000}
+    video{display:block;width:100%;height:auto;max-height:70svh;background:#000}
+    .badge{
+      position:absolute;left:12px;top:12px;background:rgba(0,0,0,.6);
+      padding:6px 10px;border-radius:999px;font-size:.85rem;border:1px solid rgba(255,255,255,.18)
+    }
+    .content{padding:14px 14px 18px}
+    h1{font-size:1.1rem;margin:0 0 6px}
+    p{margin:6px 0 12px;color:#cbd5e1}
+    .row{display:grid;grid-template-columns:1fr;gap:10px}
+    .btn{
+      display:inline-block;width:100%;padding:14px 16px;border-radius:12px;border:0;
+      background:var(--accent);color:#0b1023;font-weight:800;font-size:1rem;cursor:pointer
+    }
+    .ghost{background:transparent;border:1px dashed rgba(255,255,255,.25);color:#e5e7eb}
+    .dest{font-size:.9rem;opacity:.85;word-break:break-all}
+  </style>
+</head>
+<body>
+
+<div id="realBrowser" class="gate hidden">
+  <div style="max-width:680px;text-align:center">
+    <h1>Welcome to link-tree.site</h1>
+    <p>You’re already in your default browser. Continuing to the destination…</p>
+  </div>
+</div>
+
+<div id="iabOverlay" class="overlay hidden" aria-modal="true" role="dialog">
+  <div class="modal">
+    <div class="video-wrap">
+      <span id="platformBadge" class="badge">In-App Browser</span>
+      <video id="eduVideo" playsinline autoplay controls></video>
+    </div>
+    <div class="content">
+      <h1 id="headline">Open this page in your default browser</h1>
+      <p id="desc">For your security and best experience, link-tree.site only works in your phone’s default browser. Tap the button below to open instantly.</p>
+      <div class="row">
+        <button id="openBtn" class="btn">Open in Default Browser</button>
+        <button id="copyBtn" class="btn ghost">Copy Link</button>
+      </div>
+      <p class="dest"><strong>Destination:</strong> <span id="destText"></span></p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  function getParam(name){
+    const url = new URL(window.location.href);
+    return url.searchParams.get(name) || "";
+  }
+  function safeDecode(s){
+    if(!s) return "";
+    try{ return decodeURIComponent(s); }catch(e){}
+    try{ return atob(s); }catch(e){}
+    return s;
+  }
+
+  const ua = navigator.userAgent || "";
+  const isAndroid = /Android/i.test(ua);
+  const isIOS = /(iPad|iPhone|iPod)/i.test(ua);
+
+  const markers = {
+    tiktok: /(TikTok|musical\.ly)/i,
+    facebook: /(FBAN|FBAV|FB_IAB|FB4A|FB4C)/i,
+    instagram: /Instagram/i,
+    messenger: /Messenger/i,
+    twitter: /(Twitter|X-Twitter)/i,
+    x: /\bX\b/i,
+    snapchat: /Snapchat/i,
+    pinterest: /Pinterest/i,
+    telegram: /Telegram/i,
+    linkedin: /LinkedInApp|LinkedIn/i,
+    reddit: /reddit/i,
+    chrome_webview: /(wv|WebView)/i,
+    line: /Line/i,
+    whatsapp: /WhatsApp/i
+  };
+
+  function detectPlatform(){
+    for (const key in markers){
+      if (markers[key].test(ua)) return key;
+    }
+    return null;
+  }
+
+  const platformKey = detectPlatform();
+  const isInApp = !!platformKey || /(wv|WebView)/i.test(ua);
+
+  const toRaw = getParam("to") || getParam("url") || "";
+  const target = safeDecode(toRaw) || "https://link-tree.site/";
+  const httpsTarget = target.replace(/^http(s)?:\/\//i, "https://");
+
+  const destSpan = document.getElementById("destText");
+  const overlay = document.getElementById("iabOverlay");
+  const real = document.getElementById("realBrowser");
+  const openBtn = document.getElementById("openBtn");
+  const copyBtn = document.getElementById("copyBtn");
+  const eduVideo = document.getElementById("eduVideo");
+  const platformBadge = document.getElementById("platformBadge");
+
+  const videoMap = {
+    tiktok: "TikTok.mp4",
+    facebook: "Facebook.mp4",
+    instagram: "Instagram.mp4",
+    messenger: "Messenger.mp4",
+    twitter: "Twitter.mp4",
+    x: "Twitter.mp4",
+    snapchat: "Snapchat.mp4",
+    pinterest: "Pinterest.mp4",
+    telegram: "Telegram.mp4",
+    linkedin: "LinkedIn.mp4",
+    reddit: "Reddit.mp4",
+    chrome_webview: "WebView.mp4",
+    line: "Line.mp4",
+    whatsapp: "WhatsApp.mp4",
+    default: "InApp.mp4"
+  };
+
+  function setVideoForPlatform(key){
+    const src = videoMap[key] || videoMap.default;
+    while (eduVideo.firstChild) eduVideo.removeChild(eduVideo.firstChild);
+    const source = document.createElement("source");
+    source.src = src;
+    source.type = "video/mp4";
+    eduVideo.appendChild(source);
+
+    eduVideo.muted = false; // ✅ UNMUTE VIDEOS COMPLETELY
+    const playAttempt = eduVideo.play();
+    if (playAttempt && typeof playAttempt.catch === "function") {
+      playAttempt.catch(()=>{});
+    }
+  }
+
+  function openExternally(){
+    if(isAndroid){
+      const intentUrl = `intent://${httpsTarget.replace(/^https:\/\//,'')}` +
+                        `#Intent;scheme=https;action=android.intent.action.VIEW;` +
+                        `S.browser_fallback_url=${encodeURIComponent(httpsTarget)};end`;
+      try{ window.location.href = intentUrl; }catch(e){}
+      setTimeout(function(){ window.open(httpsTarget, "_blank", "noopener"); }, 350);
+    } else if(isIOS){
+      window.open(httpsTarget, "_blank", "noopener");
+    } else {
+      window.location.href = httpsTarget;
+    }
+  }
+
+  if (isInApp){
+    destSpan.textContent = httpsTarget;
+    platformBadge.textContent = platformKey || "In-App Browser";
+    setVideoForPlatform(platformKey);
+    overlay.classList.remove("hidden");
+    document.documentElement.style.overflow = "hidden";
+  } else {
+    real.classList.remove("hidden");
+    setTimeout(function(){ window.location.replace(httpsTarget); }, 250);
+  }
+
+  openBtn.addEventListener("click", openExternally);
+  copyBtn.addEventListener("click", function(){
+    navigator.clipboard.writeText(httpsTarget).then(function(){
+      copyBtn.textContent = "Copied!";
+      setTimeout(()=>copyBtn.textContent="Copy Link", 1500);
+    });
+  });
+})();
+</script>
+</body>
+</html>
